@@ -1,0 +1,128 @@
+name: Build, Sign (optional), and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [ arm64, x64 ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm i -g nativefier@55.0.1
+      - run: node scripts/icon-check.mjs
+      - name: Build
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm run build:mac:arm64
+          else
+            npm run build:mac:x64
+          fi
+      - name: Locate app
+        id: loc
+        run: |
+          APP_DIR=$(ls -d $HOME/*-darwin-* | tail -n 1)
+          echo "app_dir=$APP_DIR" >> $GITHUB_OUTPUT
+      - name: Import signing certificate (optional)
+        if: env.MAC_CERT_P12_BASE64 != ''
+        env:
+          MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+        run: |
+          echo "$MAC_CERT_P12_BASE64" | base64 --decode > mac_cert.p12
+          security create-keychain -p temp build.keychain
+          security import mac_cert.p12 -k build.keychain -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign
+          security list-keychains -d user -s build.keychain
+          security default-keychain -d user -s build.keychain
+          security unlock-keychain -p temp build.keychain
+      - name: Codesign app (optional)
+        if: env.MAC_CERT_P12_BASE64 != ''
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
+          /usr/bin/codesign --force --deep --sign "Developer ID Application: $TEAM_ID" "$APP_PATH" || true
+      - name: Notarize app (optional)
+        if: env.APPLE_ID != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Space.zip
+          xcrun notarytool submit Space.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait || true
+      - name: Zip artifact
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "${{ steps.loc.outputs.app_dir }}/Space.app" app-mac-${{ matrix.arch }}.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: space-mac-${{ matrix.arch }}
+          path: app-mac-${{ matrix.arch }}.zip
+
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: npm i -g nativefier@55.0.1
+      - name: Verify icons
+        run: node scripts/icon-check.mjs
+        shell: bash
+      - name: Build Windows
+        run: |
+          npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
+            --name "Space" \
+            --platform windows \
+            --arch x64 \
+            --icon "assets/space_icon.ico" \
+            --single-instance \
+            --disable-dev-tools \
+            --browserwindow-options '{"frame":true,"fullscreenable":true}' \
+            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
+            --out "$Env:USERPROFILE"
+        shell: pwsh
+      - name: Zip artifact
+        run: |
+          $dir = Get-ChildItem "$Env:USERPROFILE" -Directory -Filter "*-win32-*" | Select-Object -Last 1
+          Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: space-win-x64
+          path: app-win-x64.zip
+
+  release:
+    name: Release on tag
+    needs: [ macos, windows ]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/space-mac-arm64/app-mac-arm64.zip
+            dist/space-mac-x64/app-mac-x64.zip
+            dist/space-win-x64/app-win-x64.zip
+          generate_release_notes: true
+
+

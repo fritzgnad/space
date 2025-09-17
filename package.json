@@ -1,0 +1,19 @@
+{
+  "name": "space-nativefier",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Nativefier desktop apps for space.studiofritzgnad.de",
+  "license": "MIT",
+  "scripts": {
+    "build:mac:arm64": "zsh scripts/build-mac-arm64.sh",
+    "build:mac:x64": "zsh scripts/build-mac-x64.sh",
+    "build:win:x64": "zsh scripts/build-win-x64.sh",
+    "icons:check": "node scripts/icon-check.mjs"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}
+
+

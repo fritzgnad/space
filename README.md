@@ -6,6 +6,8 @@ Create Nativefier desktop apps for `https://space.studiofritzgnad.de` for:
 - **macOS Apple Silicon (arm64)**
 - **macOS Intel (x64)**
 
+**Current Version**: 1.6
+
 Icons live in `assets/`:
 
 - PNG: `assets/space_icon.png` (macOS)
@@ -86,18 +88,28 @@ npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
 
 ### NPM scripts
 
+Build all platforms using the provided scripts:
+
 ```bash
-npm run build:mac:arm64
-npm run build:mac:x64
-npm run build:win:x64
-npm run icons:check
+npm run build:mac:arm64    # Build macOS Apple Silicon
+npm run build:mac:x64      # Build macOS Intel
+npm run build:win:x64      # Build Windows x64
+npm run icons:check        # Verify icon files exist
 ```
+
+**Build Output**: Apps are built in the project root:
+- macOS: `Space-darwin-arm64/` and `Space-darwin-x64/`
+- Windows: `Space-win32-x64/`
+
+The scripts automatically compress builds to zip files (e.g., `Space-darwin-arm64_1.6.zip`).
 
 ### CI (GitHub Actions)
 
-- On push/PR to `main`, artifacts for macOS arm64/x64 and Windows x64 are built and uploaded.
-- On tags matching `v*`, artifacts are attached to a GitHub Release.
-- Optional macOS codesigning/notarization and Windows installer packaging are supported via secrets. If secrets are not provided, the jobs still produce unsigned zips.
+- **Automatic builds**: On push/PR to `main`, artifacts for macOS arm64/x64 and Windows x64 are built and uploaded as GitHub Actions artifacts.
+- **Releases**: On tags matching `v*` (e.g., `v1.6`), artifacts are automatically attached to a GitHub Release.
+- **Optional signing**: macOS codesigning/notarization is supported via secrets. If secrets are not provided, the jobs still produce unsigned zips.
+
+Download the latest builds from the [Actions tab](https://github.com/fritzgnad/space/actions) or from [Releases](https://github.com/fritzgnad/space/releases) for tagged versions.
 
 #### macOS signing/notarization secrets (optional)
 

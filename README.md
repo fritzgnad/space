@@ -11,10 +11,25 @@ Icons live in `assets/`:
 - PNG: `assets/space_icon.png` (macOS)
 - ICO: `assets/space_icon.ico` (Windows)
 
+### Persistent Login & Cookies
+
+All builds use persistent session storage so you stay logged in across app restarts. Cookies are automatically saved and restored via Electron's user data directory:
+
+- **macOS**: User data (including cookies) stored in `~/Library/Application Support/Space`
+- **Windows**: User data (including cookies) stored in `%APPDATA%\Space` (default Electron location)
+
+**Important**: Cookies persist automatically - no special configuration needed. The app uses Electron's built-in cookie storage which saves cookies to disk in the user data directory.
+
+To clear login data and cookies, delete the respective directory:
+- macOS: `rm -rf ~/Library/Application\ Support/Space`
+- Windows: Delete `%APPDATA%\Space` folder
+
+The app will remember your login as long as the website sets persistent cookies (typically when "Remember me" is checked during login).
+
 ### Prerequisites
 
 - Node.js 18+
-- Nativefier (used via `npx nativefier@55.0.1`, pinned)
+- Nativefier (used via `npx nativefier@52.0.0`, pinned)
 - macOS: For building Windows on Apple Silicon, install Rosetta and Wine
 
 ### Local builds
@@ -22,7 +37,7 @@ Icons live in `assets/`:
 macOS arm64:
 
 ```bash
-npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
+npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
   --name "Space" \
   --platform mac \
   --arch arm64 \
@@ -36,7 +51,7 @@ npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
 macOS x64 (also works on Apple Silicon):
 
 ```bash
-npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
+npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
   --name "Space" \
   --platform mac \
   --arch x64 \
@@ -57,7 +72,7 @@ softwareupdate --install-rosetta --agree-to-license
 export PATH="/Applications/Wine Stable.app/Contents/Resources/wine/bin:$PATH"
 wine64 --version
 
-npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
+npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
   --name "Space" \
   --platform windows \
   --arch x64 \

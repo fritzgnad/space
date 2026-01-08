@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - run: npm i -g nativefier@55.0.1
+      - run: npm i -g nativefier@52.0.0
       - run: node scripts/icon-check.mjs
       - name: Build
         run: |
@@ -80,13 +80,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - run: npm i -g nativefier@55.0.1
+      - run: npm i -g nativefier@52.0.0
       - name: Verify icons
         run: node scripts/icon-check.mjs
         shell: bash
       - name: Build Windows
         run: |
-          npx nativefier@55.0.1 "https://space.studiofritzgnad.de" \
+          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
             --name "Space" \
             --platform windows \
             --arch x64 \
@@ -94,6 +94,8 @@ jobs:
             --single-instance \
             --disable-dev-tools \
             --browserwindow-options '{"frame":true,"fullscreenable":true}' \
+            --app-version "1.6" \
+            --build-version "1.6" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
             --out "$Env:USERPROFILE"
         shell: pwsh

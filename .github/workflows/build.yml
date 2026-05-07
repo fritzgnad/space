@@ -85,6 +85,7 @@ jobs:
         run: node scripts/icon-check.mjs
         shell: bash
       - name: Build Windows
+        shell: bash
         run: |
           npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
             --name "Space" \
@@ -97,13 +98,12 @@ jobs:
             --app-version "1.6" \
             --build-version "1.6" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
-            --out "$Env:USERPROFILE"
-        shell: pwsh
+            --out "$USERPROFILE"
       - name: Zip artifact
+        shell: pwsh
         run: |
           $dir = Get-ChildItem "$Env:USERPROFILE" -Directory -Filter "*-win32-*" | Select-Object -Last 1
           Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
-        shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: space-win-x64

@@ -87,6 +87,7 @@ jobs:
       - name: Build Windows
         shell: bash
         run: |
+          mkdir -p dist-win
           npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
             --name "Space" \
             --platform windows \
@@ -98,11 +99,11 @@ jobs:
             --app-version "1.6" \
             --build-version "1.6" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
-            --out "$USERPROFILE"
+            --out dist-win
       - name: Zip artifact
         shell: pwsh
         run: |
-          $dir = Get-ChildItem "$Env:USERPROFILE" -Directory -Filter "*-win32-*" | Select-Object -Last 1
+          $dir = Get-ChildItem "dist-win" -Directory -Filter "*-win32-*" | Select-Object -Last 1
           Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
       - uses: actions/upload-artifact@v4
         with:

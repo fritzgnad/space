@@ -85,29 +85,30 @@ jobs:
         run: node scripts/icon-check.mjs
         shell: bash
       - name: Build Windows
-        shell: pwsh
+        shell: bash
         run: |
-          New-Item -ItemType Directory -Force -Path dist-win | Out-Null
-          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" `
-            --name "Space" `
-            --platform windows `
-            --arch x64 `
-            --icon "assets/space_icon.ico" `
-            --single-instance `
-            --disable-dev-tools `
-            --browserwindow-options '{"frame":true,"fullscreenable":true}' `
-            --app-version "1.6" `
-            --build-version "1.6" `
-            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' `
+          mkdir -p dist-win
+          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
+            --name "Space" \
+            --platform windows \
+            --arch x64 \
+            --icon "assets/space_icon.ico" \
+            --single-instance \
+            --disable-dev-tools \
+            --browserwindow-options '{"frame":true,"fullscreenable":true}' \
+            --app-version "1.6" \
+            --build-version "1.6" \
+            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
             --out dist-win
-          Write-Host "=== dist-win contents ==="
-          Get-ChildItem dist-win | Format-Table Name, Attributes
+          echo "=== dist-win contents ==="
+          ls -la dist-win/
       - name: Zip artifact
-        shell: pwsh
+        shell: bash
         run: |
-          $dir = Get-ChildItem "dist-win" -Directory | Select-Object -Last 1
-          Write-Host "Zipping: $($dir.FullName)"
-          Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
+          dir=$(find dist-win -maxdepth 1 -mindepth 1 -type d | head -n 1)
+          echo "Zipping: $dir"
+          cd dist-win
+          zip -r ../app-win-x64.zip "$(basename "$dir")"
       - uses: actions/upload-artifact@v4
         with:
           name: space-win-x64

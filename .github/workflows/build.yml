@@ -85,25 +85,28 @@ jobs:
         run: node scripts/icon-check.mjs
         shell: bash
       - name: Build Windows
-        shell: bash
+        shell: pwsh
         run: |
-          mkdir -p dist-win
-          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
-            --name "Space" \
-            --platform windows \
-            --arch x64 \
-            --icon "assets/space_icon.ico" \
-            --single-instance \
-            --disable-dev-tools \
-            --browserwindow-options '{"frame":true,"fullscreenable":true}' \
-            --app-version "1.6" \
-            --build-version "1.6" \
-            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
+          New-Item -ItemType Directory -Force -Path dist-win | Out-Null
+          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" `
+            --name "Space" `
+            --platform windows `
+            --arch x64 `
+            --icon "assets/space_icon.ico" `
+            --single-instance `
+            --disable-dev-tools `
+            --browserwindow-options '{"frame":true,"fullscreenable":true}' `
+            --app-version "1.6" `
+            --build-version "1.6" `
+            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' `
             --out dist-win
+          Write-Host "=== dist-win contents ==="
+          Get-ChildItem dist-win | Format-Table Name, Attributes
       - name: Zip artifact
         shell: pwsh
         run: |
-          $dir = Get-ChildItem "dist-win" -Directory -Filter "*-win32-*" | Select-Object -Last 1
+          $dir = Get-ChildItem "dist-win" -Directory | Select-Object -Last 1
+          Write-Host "Zipping: $($dir.FullName)"
           Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
       - uses: actions/upload-artifact@v4
         with:

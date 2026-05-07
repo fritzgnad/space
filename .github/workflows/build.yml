@@ -33,7 +33,7 @@ jobs:
       - name: Locate app
         id: loc
         run: |
-          APP_DIR=$(ls -d $HOME/*-darwin-* | tail -n 1)
+          APP_DIR=$(find "$GITHUB_WORKSPACE" -maxdepth 1 -type d -name "Space-darwin-*" | tail -n 1)
           echo "app_dir=$APP_DIR" >> $GITHUB_OUTPUT
       - name: Import signing certificate (optional)
         if: env.MAC_CERT_P12_BASE64 != ''

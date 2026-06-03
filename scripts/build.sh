@@ -4,7 +4,7 @@ set -euo pipefail
 APP_NAME="Space"
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 OUT_BASE_DIR="$(dirname "${SCRIPT_DIR}")"
-VERSION="1.7"
+VERSION="1.7.1"
 
 # Define platform-specific icon paths
 ICON_PATH_MAC="${SCRIPT_DIR}/../assets/space_icon.png"
@@ -77,6 +77,11 @@ for target in "${targets[@]}"; do
   APP_DIR=$(find "${OUT_DIR}" -maxdepth 1 -name "${APP_NAME}-${PLATFORM_NAME}-${arch}" -type d | head -n 1)
   
   if [[ -d "${APP_DIR}" ]]; then
+    # macOS only: inject camera/microphone usage descriptions so macOS (TCC)
+    # allows media access for WebRTC (camera/mic never prompts otherwise).
+    if [[ "${platform}" == "mac" ]]; then
+      "${SCRIPT_DIR}/patch-mac-plist.sh" "${APP_DIR}"
+    fi
     ZIP_NAME="${APP_NAME}-${PLATFORM_NAME}-${arch}_${VERSION}.zip"
     cd "${OUT_DIR}"
     zip -r -q "${ZIP_NAME}" "$(basename "${APP_DIR}")"

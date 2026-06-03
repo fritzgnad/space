@@ -34,6 +34,8 @@ echo "Done. Output at ${OUT_DIR}"
 echo "Compressing build..."
 APP_DIR=$(find "${OUT_DIR}" -maxdepth 1 -name "${APP_NAME}-darwin-arm64" -type d | head -n 1)
 if [[ -d "${APP_DIR}" ]]; then
+  # Inject camera/microphone usage descriptions so macOS allows media access.
+  "${SCRIPT_DIR}/patch-mac-plist.sh" "${APP_DIR}"
   ZIP_NAME="${APP_NAME}-darwin-arm64_${VERSION}.zip"
   cd "${OUT_DIR}"
   zip -r -q "${ZIP_NAME}" "$(basename "${APP_DIR}")"

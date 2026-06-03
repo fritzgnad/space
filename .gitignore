@@ -143,3 +143,6 @@ Space-*/
 *-darwin-*/
 *-win32-*/
 *.zip
+
+# Local Claude Code workspace
+.claude/

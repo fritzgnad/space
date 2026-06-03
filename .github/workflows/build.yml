@@ -87,19 +87,22 @@ jobs:
       - name: Build Windows
         shell: bash
         run: |
+          rm -rf dist-win
           mkdir -p dist-win
-          npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
+          # nativefier@52 ignores --out on the Windows runner and builds the app
+          # into the current working directory instead. So we build into dist-win
+          # as the cwd to force a predictable, isolated output location.
+          ( cd dist-win && npx nativefier@52.0.0 "https://space.studiofritzgnad.de" \
             --name "Space" \
             --platform windows \
             --arch x64 \
-            --icon "assets/space_icon.ico" \
+            --icon "../assets/space_icon.ico" \
             --single-instance \
             --disable-dev-tools \
             --browserwindow-options '{"frame":true,"fullscreenable":true}' \
             --app-version "1.7" \
             --build-version "1.7" \
-            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
-            --out dist-win
+            --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' )
           echo "=== dist-win contents (recursive) ==="
           ls -laR dist-win/ || true
           # Fail early if nativefier silently produced no app (known Windows-runner issue)

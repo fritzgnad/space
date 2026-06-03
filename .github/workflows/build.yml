@@ -100,14 +100,33 @@ jobs:
             --build-version "1.7" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' \
             --out dist-win
-          echo "=== dist-win contents ==="
-          ls -la dist-win/
+          echo "=== dist-win contents (recursive) ==="
+          ls -laR dist-win/ || true
+          # Fail early if nativefier silently produced no app (known Windows-runner issue)
+          if [ -z "$(find dist-win -name 'Space.exe' -print -quit)" ]; then
+            echo "ERROR: nativefier did not produce Space.exe under dist-win"
+            exit 1
+          fi
       - name: Zip artifact
         shell: pwsh
         run: |
-          $dir = Get-ChildItem "dist-win" -Directory | Select-Object -Last 1
-          Write-Host "Zipping: $($dir.FullName)"
-          Compress-Archive -Path $dir.FullName -DestinationPath app-win-x64.zip
+          $ErrorActionPreference = "Stop"
+          # Locate the built app by finding Space.exe wherever nativefier placed it,
+          # rather than assuming a specific top-level directory name/structure.
+          $exe = Get-ChildItem -Path "dist-win" -Recurse -Filter "Space.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) {
+            Write-Host "ERROR: Space.exe not found under dist-win. Contents:"
+            if (Test-Path "dist-win") {
+              Get-ChildItem -Path "dist-win" -Recurse | Select-Object FullName | Format-Table -AutoSize
+            } else {
+              Write-Host "dist-win directory does not exist."
+            }
+            exit 1
+          }
+          $appDir = $exe.Directory.FullName
+          Write-Host "Zipping app dir: $appDir"
+          Compress-Archive -Path $appDir -DestinationPath app-win-x64.zip -Force
+          Write-Host "Created app-win-x64.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: space-win-x64

@@ -6,7 +6,7 @@ Create Nativefier desktop apps for `https://space.studiofritzgnad.de` for:
 - **macOS Apple Silicon (arm64)**
 - **macOS Intel (x64)**
 
-**Current Version**: 1.6
+**Current Version**: 1.8.0
 
 Icons live in `assets/`:
 
@@ -27,6 +27,30 @@ To clear login data and cookies, delete the respective directory:
 - Windows: Delete `%APPDATA%\Space` folder
 
 The app will remember your login as long as the website sets persistent cookies (typically when "Remember me" is checked during login).
+
+### Camera & microphone (macOS)
+
+The build patches the app's `Info.plist` with `NSCameraUsageDescription`/`NSMicrophoneUsageDescription`, sets the stable bundle id `de.studiofritzgnad.space`, and re-signs the bundle ad-hoc (`scripts/patch-mac-plist.sh`). All three steps are required: without a valid signature covering the patched plist, macOS silently denies camera/mic access without ever showing a prompt, and the app never appears under System Settings → Privacy & Security → Camera/Microphone.
+
+On first camera/mic use, macOS shows the permission prompt. If access was denied earlier (or seems stuck), reset it and relaunch:
+
+```bash
+tccutil reset Camera de.studiofritzgnad.space
+tccutil reset Microphone de.studiofritzgnad.space
+```
+
+### Opening the app on macOS (unsigned builds)
+
+Without an Apple Developer ID certificate the app is only ad-hoc signed, so Gatekeeper warns on first launch of a downloaded build. Either:
+
+1. Try to open the app once, then go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** (on older macOS, right-click the app → **Open** also works), or
+2. Remove the quarantine flag after unzipping:
+
+   ```bash
+   xattr -dr com.apple.quarantine /Applications/Space.app
+   ```
+
+To ship builds with no warning at all, configure the signing/notarization secrets below — the CI then signs with hardened runtime + entitlements (`assets/entitlements.mac.plist`), notarizes, and staples the ticket.
 
 ### Prerequisites
 
@@ -118,6 +142,7 @@ Download the latest builds from the [Actions tab](https://github.com/fritzgnad/s
 - `APPLE_TEAM_ID` — Team ID
 - `MAC_CERT_P12_BASE64` — base64 of Developer ID Application certificate `.p12`
 - `MAC_CERT_PASSWORD` — password for the `.p12`
+- `MAC_SIGNING_IDENTITY` — full identity string, e.g. `Developer ID Application: Your Name (TEAMID)`
 
 #### Windows installer secrets (optional)
 

@@ -1,9 +1,16 @@
 #!/bin/zsh
 set -euo pipefail
 
-# Injects camera/microphone usage descriptions into a built .app's Info.plist.
-# Without these keys, macOS (TCC) silently denies camera/mic access and never
-# shows the permission prompt, so WebRTC apps like WorkAdventure can't get media.
+# Injects camera/microphone usage descriptions and a stable bundle identifier
+# into a built .app's Info.plist, then re-signs the bundle ad-hoc.
+#
+# Without the usage descriptions, macOS (TCC) silently denies camera/mic access
+# and never shows the permission prompt, so WebRTC apps like WorkAdventure
+# can't get media. The re-sign is mandatory: editing Info.plist invalidates the
+# existing signature, and TCC refuses to attribute permission requests to an
+# app with a broken signature — again a silent deny with no way to unblock.
+# The stable bundle id keeps TCC grants intact across rebuilds (nativefier
+# otherwise generates a different id every build).
 #
 # Usage: patch-mac-plist.sh /path/to/Space-darwin-<arch>
 
@@ -24,6 +31,7 @@ fi
 
 CAM_MSG="Space uses your camera for video chat in the virtual space."
 MIC_MSG="Space uses your microphone for voice chat in the virtual space."
+BUNDLE_ID="de.studiofritzgnad.space"
 
 set_key() {
   local key="$1" msg="$2"
@@ -34,4 +42,11 @@ set_key() {
 set_key "NSCameraUsageDescription" "${CAM_MSG}"
 set_key "NSMicrophoneUsageDescription" "${MIC_MSG}"
 
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier ${BUNDLE_ID}" "${PLIST}"
+
 echo "Patched Info.plist with camera/microphone usage descriptions: ${PLIST}"
+
+# Re-sign the whole bundle ad-hoc so the signature covers the patched plist.
+codesign --force --deep --sign - "${APP_BUNDLE}"
+codesign --verify --deep --strict "${APP_BUNDLE}"
+echo "Re-signed ad-hoc and verified: ${APP_BUNDLE}"

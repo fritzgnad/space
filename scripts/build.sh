@@ -4,7 +4,7 @@ set -euo pipefail
 APP_NAME="Space"
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 OUT_BASE_DIR="$(dirname "${SCRIPT_DIR}")"
-VERSION="1.7.1"
+VERSION="1.8.0"
 
 # Define platform-specific icon paths
 ICON_PATH_MAC="${SCRIPT_DIR}/../assets/space_icon.png"

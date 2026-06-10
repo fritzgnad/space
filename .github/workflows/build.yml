@@ -36,7 +36,7 @@ jobs:
           APP_DIR=$(find "$GITHUB_WORKSPACE" -maxdepth 1 -type d -name "Space-darwin-*" | tail -n 1)
           echo "app_dir=$APP_DIR" >> $GITHUB_OUTPUT
       - name: Import signing certificate (optional)
-        if: env.MAC_CERT_P12_BASE64 != ''
+        if: ${{ secrets.MAC_CERT_P12_BASE64 != '' }}
         env:
           MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
           MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
@@ -47,15 +47,21 @@ jobs:
           security list-keychains -d user -s build.keychain
           security default-keychain -d user -s build.keychain
           security unlock-keychain -p temp build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k temp build.keychain
       - name: Codesign app (optional)
-        if: env.MAC_CERT_P12_BASE64 != ''
+        if: ${{ secrets.MAC_CERT_P12_BASE64 != '' }}
         env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          MAC_SIGNING_IDENTITY: ${{ secrets.MAC_SIGNING_IDENTITY }}
         run: |
           APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
-          /usr/bin/codesign --force --deep --sign "Developer ID Application: $TEAM_ID" "$APP_PATH" || true
-      - name: Notarize app (optional)
-        if: env.APPLE_ID != ''
+          # Hardened runtime + entitlements are required for notarization; the
+          # camera/mic entitlements keep WebRTC working under the hardened runtime.
+          /usr/bin/codesign --force --deep --options runtime \
+            --entitlements assets/entitlements.mac.plist \
+            --sign "$MAC_SIGNING_IDENTITY" "$APP_PATH"
+          /usr/bin/codesign --verify --deep --strict "$APP_PATH"
+      - name: Notarize and staple app (optional)
+        if: ${{ secrets.APPLE_ID != '' }}
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
@@ -63,7 +69,8 @@ jobs:
         run: |
           APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Space.zip
-          xcrun notarytool submit Space.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait || true
+          xcrun notarytool submit Space.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple "$APP_PATH"
       - name: Zip artifact
         run: |
           ditto -c -k --sequesterRsrc --keepParent "${{ steps.loc.outputs.app_dir }}/Space.app" app-mac-${{ matrix.arch }}.zip
@@ -100,8 +107,8 @@ jobs:
             --single-instance \
             --disable-dev-tools \
             --browserwindow-options '{"frame":true,"fullscreenable":true}' \
-            --app-version "1.7.1" \
-            --build-version "1.7.1" \
+            --app-version "1.8.0" \
+            --build-version "1.8.0" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' )
           echo "=== dist-win contents (recursive) ==="
           ls -laR dist-win/ || true

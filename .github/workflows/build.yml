@@ -16,6 +16,15 @@ jobs:
       fail-fast: false
       matrix:
         arch: [ arm64, x64 ]
+    # Secrets must be mapped to job-level env to be usable in step `if:`
+    # conditions (the secrets context is not available there).
+    env:
+      MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
+      MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+      MAC_SIGNING_IDENTITY: ${{ secrets.MAC_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,10 +45,7 @@ jobs:
           APP_DIR=$(find "$GITHUB_WORKSPACE" -maxdepth 1 -type d -name "Space-darwin-*" | tail -n 1)
           echo "app_dir=$APP_DIR" >> $GITHUB_OUTPUT
       - name: Import signing certificate (optional)
-        if: ${{ secrets.MAC_CERT_P12_BASE64 != '' }}
-        env:
-          MAC_CERT_P12_BASE64: ${{ secrets.MAC_CERT_P12_BASE64 }}
-          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+        if: env.MAC_CERT_P12_BASE64 != ''
         run: |
           echo "$MAC_CERT_P12_BASE64" | base64 --decode > mac_cert.p12
           security create-keychain -p temp build.keychain
@@ -49,9 +55,7 @@ jobs:
           security unlock-keychain -p temp build.keychain
           security set-key-partition-list -S apple-tool:,apple: -s -k temp build.keychain
       - name: Codesign app (optional)
-        if: ${{ secrets.MAC_CERT_P12_BASE64 != '' }}
-        env:
-          MAC_SIGNING_IDENTITY: ${{ secrets.MAC_SIGNING_IDENTITY }}
+        if: env.MAC_CERT_P12_BASE64 != ''
         run: |
           APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
           # Hardened runtime + entitlements are required for notarization; the
@@ -61,11 +65,7 @@ jobs:
             --sign "$MAC_SIGNING_IDENTITY" "$APP_PATH"
           /usr/bin/codesign --verify --deep --strict "$APP_PATH"
       - name: Notarize and staple app (optional)
-        if: ${{ secrets.APPLE_ID != '' }}
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        if: env.APPLE_ID != ''
         run: |
           APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Space.zip

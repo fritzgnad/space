@@ -6,7 +6,7 @@ Create Nativefier desktop apps for `https://space.studiofritzgnad.de` for:
 - **macOS Apple Silicon (arm64)**
 - **macOS Intel (x64)**
 
-**Current Version**: 1.8.0
+**Current Version**: 1.8.1
 
 Icons live in `assets/`:
 

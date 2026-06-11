@@ -63,7 +63,7 @@ jobs:
           # working in Electron's helper processes).
           bash scripts/sign-mac-app.sh "$APP_PATH" "$MAC_SIGNING_IDENTITY" assets/entitlements.mac.plist
       - name: Notarize and staple app (optional)
-        if: env.APPLE_ID != ''
+        if: env.APPLE_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != ''
         run: |
           APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Space.zip

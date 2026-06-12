@@ -46,6 +46,22 @@ set_key "NSMicrophoneUsageDescription" "${MIC_MSG}"
 
 echo "Patched Info.plist with camera/microphone usage descriptions: ${PLIST}"
 
+# Guard nativefier's app.on('activate') handler: it calls mainWindow.show()
+# without checking the window exists, so activating the app (dock click)
+# before the window is created crashes the main process with
+# "Cannot read properties of undefined (reading 'show')". Nativefier is
+# archived upstream, so we patch the bundled main.js here, pre-signing.
+MAIN_JS="${APP_BUNDLE}/Contents/Resources/app/lib/main.js"
+if [[ -f "${MAIN_JS}" ]]; then
+  perl -0pi -e 's/if \(!hasVisibleWindows\) \{/if (!hasVisibleWindows && mainWindow) {/' "${MAIN_JS}"
+  if grep -q 'hasVisibleWindows && mainWindow' "${MAIN_JS}"; then
+    echo "Patched activate-handler mainWindow guard in: ${MAIN_JS}"
+  else
+    echo "ERROR: activate-handler pattern not found in ${MAIN_JS}"
+    exit 1
+  fi
+fi
+
 # Re-sign the whole bundle ad-hoc so the signature covers the patched plist.
 codesign --force --deep --sign - "${APP_BUNDLE}"
 codesign --verify --deep --strict "${APP_BUNDLE}"

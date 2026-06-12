@@ -42,8 +42,19 @@ jobs:
       - name: Locate app
         id: loc
         run: |
-          APP_DIR=$(find "$GITHUB_WORKSPACE" -maxdepth 1 -type d -name "Space-darwin-*" | tail -n 1)
+          # Exact match on the arch — a wildcard with tail used to grab the
+          # wrong build dir when multiple were present.
+          APP_DIR="$GITHUB_WORKSPACE/Space-darwin-${{ matrix.arch }}"
+          test -d "$APP_DIR/Space.app" || { echo "ERROR: $APP_DIR/Space.app not found"; exit 1; }
           echo "app_dir=$APP_DIR" >> $GITHUB_OUTPUT
+      - name: Verify app arch and patches
+        run: |
+          APP_PATH="${{ steps.loc.outputs.app_dir }}/Space.app"
+          WANT_ARCH="${{ matrix.arch }}"; [ "$WANT_ARCH" = "x64" ] && WANT_ARCH="x86_64"
+          file "$APP_PATH/Contents/MacOS/Space" | grep -q "$WANT_ARCH" || { echo "ERROR: wrong architecture"; file "$APP_PATH/Contents/MacOS/Space"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Contents/Info.plist" | grep -qx "de.studiofritzgnad.space" || { echo "ERROR: bundle id not patched"; exit 1; }
+          grep -q "hasVisibleWindows && mainWindow" "$APP_PATH/Contents/Resources/app/lib/main.js" || { echo "ERROR: activate-handler guard not patched"; exit 1; }
+          echo "Verified: arch, bundle id, and activate-handler patch OK"
       - name: Import signing certificate (optional)
         if: env.MAC_CERT_P12_BASE64 != ''
         run: |
@@ -105,8 +116,8 @@ jobs:
             --single-instance \
             --disable-dev-tools \
             --browserwindow-options '{"frame":true,"fullscreenable":true}' \
-            --app-version "1.8.2" \
-            --build-version "1.8.2" \
+            --app-version "1.8.3" \
+            --build-version "1.8.3" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' )
           echo "=== dist-win contents (recursive) ==="
           ls -laR dist-win/ || true

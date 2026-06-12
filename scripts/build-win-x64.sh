@@ -6,8 +6,8 @@ ICON_PATH="assets/space_icon.ico"
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 OUT_DIR="$(dirname "${SCRIPT_DIR}")"
 
-# Source VERSION from build.sh
-source "${SCRIPT_DIR}/build.sh"
+# Source VERSION (build.sh must NOT be sourced here: it would run the full multi-platform build)
+source "${SCRIPT_DIR}/version.sh"
 
 echo "Building ${APP_NAME} for Windows x64..."
 

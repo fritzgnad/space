@@ -7,8 +7,8 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 OUT_DIR="$(dirname "${SCRIPT_DIR}")"
 USER_DATA_DIR="${HOME}/Library/Application Support/${APP_NAME}"
 
-# Source VERSION from build.sh
-source "${SCRIPT_DIR}/build.sh"
+# Source VERSION (build.sh must NOT be sourced here: it would run the full multi-platform build)
+source "${SCRIPT_DIR}/version.sh"
 
 echo "Building ${APP_NAME} for macOS x64..."
 

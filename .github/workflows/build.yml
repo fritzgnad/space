@@ -80,13 +80,29 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" Space.zip
           xcrun notarytool submit Space.zip --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
           xcrun stapler staple "$APP_PATH"
+      - name: Create DMG
+        id: dmg
+        run: |
+          source scripts/version.sh
+          DMG_NAME="Space-${VERSION}-${{ matrix.arch }}.dmg"
+          bash scripts/make-dmg.sh "${{ steps.loc.outputs.app_dir }}/Space.app" "$DMG_NAME" "Space"
+          echo "dmg_name=$DMG_NAME" >> $GITHUB_OUTPUT
+      - name: Sign, notarize and staple DMG (optional)
+        if: env.MAC_CERT_P12_BASE64 != '' && env.APPLE_ID != '' && env.APPLE_APP_SPECIFIC_PASSWORD != ''
+        run: |
+          DMG="${{ steps.dmg.outputs.dmg_name }}"
+          /usr/bin/codesign --force --timestamp --sign "$MAC_SIGNING_IDENTITY" "$DMG"
+          xcrun notarytool submit "$DMG" --apple-id "$APPLE_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple "$DMG"
       - name: Zip artifact
         run: |
           ditto -c -k --sequesterRsrc --keepParent "${{ steps.loc.outputs.app_dir }}/Space.app" app-mac-${{ matrix.arch }}.zip
       - uses: actions/upload-artifact@v4
         with:
           name: space-mac-${{ matrix.arch }}
-          path: app-mac-${{ matrix.arch }}.zip
+          path: |
+            app-mac-${{ matrix.arch }}.zip
+            Space-*.dmg
 
   windows:
     name: Windows x64
@@ -167,7 +183,9 @@ jobs:
         with:
           files: |
             dist/space-mac-arm64/app-mac-arm64.zip
+            dist/space-mac-arm64/Space-*.dmg
             dist/space-mac-x64/app-mac-x64.zip
+            dist/space-mac-x64/Space-*.dmg
             dist/space-win-x64/app-win-x64.zip
           generate_release_notes: true
 

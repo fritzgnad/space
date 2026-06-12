@@ -130,7 +130,7 @@ The scripts automatically compress builds to zip files (e.g., `Space-darwin-arm6
 ### CI (GitHub Actions)
 
 - **Automatic builds**: On push/PR to `main`, artifacts for macOS arm64/x64 and Windows x64 are built and uploaded as GitHub Actions artifacts.
-- **Releases**: On tags matching `v*` (e.g., `v1.6`), artifacts are automatically attached to a GitHub Release.
+- **Releases**: On tags matching `v*` (e.g., `v1.6`), artifacts are automatically attached to a GitHub Release. macOS is shipped both as a zip and as a drag-and-drop DMG (`Space-<version>-<arch>.dmg`); when signing secrets are configured, the DMG itself is signed, notarized, and stapled.
 - **Optional signing**: macOS codesigning/notarization is supported via secrets. If secrets are not provided, the jobs still produce unsigned zips.
 
 Download the latest builds from the [Actions tab](https://github.com/fritzgnad/space/actions) or from [Releases](https://github.com/fritzgnad/space/releases) for tagged versions.

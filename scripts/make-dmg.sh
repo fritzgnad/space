@@ -17,7 +17,23 @@ APP_NAME="$(basename "${APP}")"
 STAGE="$(mktemp -d)"
 RW_DMG="$(mktemp -u).dmg"
 MOUNT="$(mktemp -d)"
-trap 'hdiutil detach "${MOUNT}" >/dev/null 2>&1 || true; rm -rf "${STAGE}" "${RW_DMG}"' EXIT
+trap 'hdiutil detach "${MOUNT}" -force >/dev/null 2>&1 || true; rm -rf "${STAGE}" "${RW_DMG}"' EXIT
+
+# hdiutil intermittently fails with "Resource busy" on CI runners when
+# fseventsd/Spotlight is still touching the freshly written staging dir.
+# Retry the affected operations a few times before giving up.
+retry() {
+  local n=0 max=5
+  until "$@"; do
+    n=$((n + 1))
+    if [[ ${n} -ge ${max} ]]; then
+      echo "ERROR: command failed after ${max} attempts: $*" >&2
+      return 1
+    fi
+    echo "  retry ${n}/${max} after transient failure: $*" >&2
+    sleep $((n * 3))
+  done
+}
 
 # ditto preserves signatures, extended attributes, and symlinks.
 ditto "${APP}" "${STAGE}/${APP_NAME}"
@@ -28,10 +44,14 @@ mkdir "${STAGE}/.background"
 tiffutil -cathidpicheck "${ASSETS}/dmg-background.png" "${ASSETS}/dmg-background@2x.png" \
   -out "${STAGE}/.background/background.tiff"
 
+# Give fseventsd a moment to release the staging dir before imaging it.
+sync
+sleep 2
+
 # Build read-write first so Finder can store the window layout (.DS_Store),
 # then compress to the final read-only image.
-hdiutil create -volname "${VOLNAME}" -srcfolder "${STAGE}" -ov -format UDRW "${RW_DMG}" >/dev/null
-hdiutil attach "${RW_DMG}" -nobrowse -mountpoint "${MOUNT}" >/dev/null
+retry hdiutil create -volname "${VOLNAME}" -srcfolder "${STAGE}" -ov -format UDRW "${RW_DMG}" >/dev/null
+retry hdiutil attach "${RW_DMG}" -nobrowse -mountpoint "${MOUNT}" >/dev/null
 
 if ! osascript <<EOF
 tell application "Finder"
@@ -60,6 +80,6 @@ then
 fi
 
 sync
-hdiutil detach "${MOUNT}" >/dev/null
-hdiutil convert "${RW_DMG}" -format UDZO -o "${DMG_OUT}" -ov >/dev/null
+retry hdiutil detach "${MOUNT}" >/dev/null
+retry hdiutil convert "${RW_DMG}" -format UDZO -o "${DMG_OUT}" -ov >/dev/null
 echo "Created: ${DMG_OUT}"

@@ -6,7 +6,7 @@ Create Nativefier desktop apps for `https://space.studiofritzgnad.de` for:
 - **macOS Apple Silicon (arm64)**
 - **macOS Intel (x64)**
 
-**Current Version**: 1.8.4
+**Current Version**: 1.8.5
 
 Icons live in `assets/`:
 
@@ -54,7 +54,7 @@ To ship builds with no warning at all, configure the signing/notarization secret
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+ (CI builds on Node 22)
 - Nativefier (used via `npx nativefier@52.0.0`, pinned)
 - macOS: For building Windows on Apple Silicon, install Rosetta and Wine
 

@@ -26,10 +26,10 @@ jobs:
       APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
       TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '18'
+          node-version: '22'
       - run: npm i -g nativefier@52.0.0
       - run: node scripts/icon-check.mjs
       - name: Build
@@ -97,7 +97,7 @@ jobs:
       - name: Zip artifact
         run: |
           ditto -c -k --sequesterRsrc --keepParent "${{ steps.loc.outputs.app_dir }}/Space.app" app-mac-${{ matrix.arch }}.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: space-mac-${{ matrix.arch }}
           path: |
@@ -108,10 +108,10 @@ jobs:
     name: Windows x64
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: '18'
+          node-version: '22'
       - run: npm i -g nativefier@52.0.0
       - name: Verify icons
         run: node scripts/icon-check.mjs
@@ -121,6 +121,9 @@ jobs:
         run: |
           rm -rf dist-win
           mkdir -p dist-win
+          # Version comes from scripts/version.sh (single source of truth) so
+          # the Windows build can never drift from the macOS build again.
+          source scripts/version.sh
           # nativefier@52 ignores --out on the Windows runner and builds the app
           # into the current working directory instead. So we build into dist-win
           # as the cwd to force a predictable, isolated output location.
@@ -132,8 +135,8 @@ jobs:
             --single-instance \
             --disable-dev-tools \
             --browserwindow-options '{"frame":true,"fullscreenable":true}' \
-            --app-version "1.8.4" \
-            --build-version "1.8.4" \
+            --app-version "${VERSION}" \
+            --build-version "${VERSION}" \
             --win32metadata '{"CompanyName":"Studio Fritz Gnad","FileDescription":"Space","ProductName":"Space"}' )
           echo "=== dist-win contents (recursive) ==="
           ls -laR dist-win/ || true
@@ -162,7 +165,7 @@ jobs:
           Write-Host "Zipping app dir: $appDir"
           Compress-Archive -Path $appDir -DestinationPath app-win-x64.zip -Force
           Write-Host "Created app-win-x64.zip"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: space-win-x64
           path: app-win-x64.zip
@@ -175,11 +178,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             dist/space-mac-arm64/app-mac-arm64.zip

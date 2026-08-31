@@ -1,6 +1,6 @@
 {
   "name": "space-nativefier",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "private": true,
   "description": "Nativefier desktop apps for space.studiofritzgnad.de",
   "license": "MIT",
@@ -11,6 +11,6 @@
     "icons:check": "node scripts/icon-check.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

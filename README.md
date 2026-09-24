@@ -6,7 +6,7 @@ Create Nativefier desktop apps for `https://space.studiofritzgnad.de` for:
 - **macOS Apple Silicon (arm64)**
 - **macOS Intel (x64)**
 
-**Current Version**: 1.8.5
+**Current Version**: 1.8.6
 
 Icons live in `assets/`:
 
@@ -22,11 +22,20 @@ All builds use persistent session storage so you stay logged in across app resta
 
 **Important**: Cookies persist automatically - no special configuration needed. The app uses Electron's built-in cookie storage which saves cookies to disk in the user data directory.
 
-To clear login data and cookies, delete the respective directory:
-- macOS: `rm -rf ~/Library/Application\ Support/Space`
-- Windows: Delete `%APPDATA%\Space` folder
-
 The app will remember your login as long as the website sets persistent cookies (typically when "Remember me" is checked during login).
+
+#### Resetting cache and cookies
+
+On macOS, **Space → Reset Cache and Cookies…** clears the HTTP cache, deletes cookies (which signs you out), and reloads the window. It asks for confirmation first. Use it when the app serves stale assets or a login gets stuck.
+
+The menu item is injected into the nativefier-built app by `scripts/patch-app-menu.mjs`, which runs from `scripts/patch-mac-plist.sh` during the macOS build. Nativefier is archived upstream, so the bundled `main.js` is patched post-build rather than forked; the patch fails the build if nativefier's menu template ever moves.
+
+Other ways to clear state, on either platform:
+
+- **Edit → Clear App Data** (built into nativefier) wipes *everything* — cookies, local storage, IndexedDB, service workers — after a confirmation prompt.
+- Delete the user data directory:
+  - macOS: `rm -rf ~/Library/Application\ Support/Space`
+  - Windows: Delete `%APPDATA%\Space` folder
 
 ### Camera & microphone (macOS)
 

@@ -15,6 +15,7 @@ set -euo pipefail
 # Usage: patch-mac-plist.sh /path/to/Space-darwin-<arch>
 
 APP_PARENT="${1:?Usage: patch-mac-plist.sh <app-output-dir>}"
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 # Locate the .app bundle inside the given directory.
 APP_BUNDLE=$(find "${APP_PARENT}" -maxdepth 1 -name "*.app" -type d | head -n 1)
@@ -60,6 +61,10 @@ if [[ -f "${MAIN_JS}" ]]; then
     echo "ERROR: activate-handler pattern not found in ${MAIN_JS}"
     exit 1
   fi
+
+  # Add "Reset Cache and Cookies…" to the Space menu. Exits non-zero if the
+  # menu template moved, so an unpatched build fails here instead of shipping.
+  node "${SCRIPT_DIR}/patch-app-menu.mjs" "${MAIN_JS}"
 fi
 
 # Re-sign the whole bundle ad-hoc so the signature covers the patched plist.
